@@ -11,43 +11,30 @@ dotenv.config();
 
 const app = express();
 
-/* ================= CORS CONFIG ================= */
 const allowedOrigins = [
-  "http://localhost:5173", // local frontend
-  "https://inventory-frontend-six-lemon.vercel.app/" // 🔥 replace with YOUR actual Vercel URL
+  "http://localhost:5173",
+  "https://inventory-frontend-six-lemon.vercel.app"
 ];
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // allow requests with no origin (like Postman)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      } else {
-        return callback(new Error("CORS not allowed"));
-      }
-    },
-    credentials: true
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
-/* ============================================== */
 
 app.use(express.json());
 
-// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/stock", stockRoutes);
 app.use("/api/suppliers", supplierRoutes);
 
-// Test route
 app.get("/", (req, res) => {
   res.json({ message: "Inventory API running" });
 });
 
-// Server
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
