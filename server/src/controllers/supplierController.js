@@ -1,16 +1,15 @@
 import { pool } from "../db.js";
 
-export const getSuppliers = async (req, res) => {
+export const getSuppliers = async (req, res, next) => {
   try {
     const result = await pool.query("SELECT * FROM suppliers ORDER BY id DESC");
     res.json(result.rows);
-  } catch (error) {
-    console.error("Failed to load suppliers:", error);
-    res.status(500).json({ message: "Failed to load suppliers" });
+  } catch (err) {
+    next(err);
   }
 };
 
-export const addSupplier = async (req, res) => {
+export const addSupplier = async (req, res, next) => {
   const { name, phone, email, address } = req.body;
 
   try {
@@ -22,13 +21,12 @@ export const addSupplier = async (req, res) => {
     );
 
     res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Failed to add supplier:", error);
-    res.status(500).json({ message: "Failed to add supplier" });
+  } catch (err) {
+    next(err);
   }
 };
 
-export const updateSupplier = async (req, res) => {
+export const updateSupplier = async (req, res, next) => {
   const { id } = req.params;
   const { name, phone, email, address } = req.body;
 
@@ -42,20 +40,18 @@ export const updateSupplier = async (req, res) => {
     );
 
     res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Failed to update supplier:", error);
-    res.status(500).json({ message: "Failed to update supplier" });
+  } catch (err) {
+    next(err);
   }
 };
 
-export const deleteSupplier = async (req, res) => {
+export const deleteSupplier = async (req, res, next) => {
   const { id } = req.params;
 
   try {
     await pool.query("DELETE FROM suppliers WHERE id = $1", [id]);
     res.json({ message: "Supplier deleted successfully" });
-  } catch (error) {
-    console.error("Failed to delete supplier:", error);
-    res.status(500).json({ message: "Failed to delete supplier" });
+  } catch (err) {
+    next(err);
   }
 };
