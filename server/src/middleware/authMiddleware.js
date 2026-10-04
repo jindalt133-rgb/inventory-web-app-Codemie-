@@ -1,11 +1,17 @@
 import jwt from "jsonwebtoken";
+import { ApiError } from "../errors/apiError.js";
 
 export const verifyToken = (req, res, next) => {
-
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
-    return res.status(401).json({ message: "Access denied. No token." });
+    return next(
+      new ApiError({
+        status: 401,
+        code: "AUTH_REQUIRED",
+        message: "Access denied. No token."
+      })
+    );
   }
 
   const token = authHeader.split(" ")[1];
@@ -15,6 +21,12 @@ export const verifyToken = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
-    res.status(401).json({ message: "Invalid token" });
+    next(
+      new ApiError({
+        status: 401,
+        code: "AUTH_REQUIRED",
+        message: "Invalid token"
+      })
+    );
   }
 };
