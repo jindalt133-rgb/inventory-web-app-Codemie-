@@ -1,14 +1,13 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { pool } from "../db.js";
+import { ApiError } from "../errors/apiError.js";
 
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
   const { name, email, password, role } = req.body;
 
   try {
-    if (!name || !email || !password || !role) {
-      return res.status(400).json({ message: "Missing fields" });
-    }
+    // request validation handled by middleware
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -19,20 +18,38 @@ export const register = async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
+    // request validation handled by middleware
+
     const result = await pool.query("SELECT * FROM users WHERE email=$1", [email]);
-    if (result.rows.length === 0) return res.status(401).json({ message: "User not found" });
+    if (result.rows.length === 0) {
+      return next(
+        new ApiError({
+          status: 401,
+          code: "AUTH_REQUIRED",
+          message: "Invalid credentials"
+        })
+      );
+    }
 
     const user = result.rows[0];
     const ok = await bcrypt.compare(password, user.password_hash);
-    if (!ok) return res.status(401).json({ message: "Invalid password" });
+    if (!ok) {
+      return next(
+        new ApiError({
+          status: 401,
+          code: "AUTH_REQUIRED",
+          message: "Invalid credentials"
+        })
+      );
+    }
 
     const token = jwt.sign(
       { id: user.id, role: user.role, email: user.email },
@@ -45,6 +62,6 @@ export const login = async (req, res) => {
       user: { id: user.id, name: user.name, email: user.email, role: user.role }
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
