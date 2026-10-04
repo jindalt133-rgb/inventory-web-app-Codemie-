@@ -2,10 +2,10 @@ import { ApiError } from "../errors/apiError.js";
 
 // Minimal validation helper: define rules per route
 // rule shape: { in: 'body'|'params'|'query', key: 'string',
-//              required?: bool, type?: 'string'|'number'|'email', min#ú num, custom?: (v)=>bool }
+//              required?: bool, type?: 'string'|'number'|'email', min#ï¿½ num, custom?: (v)=>bool }
 
 function isEmpty(v) {
-  return v === undefined || v === null || (v" === "";
+  return v === undefined || v === null || v === "";
 }
 
 function isNumericString(v) {
@@ -17,7 +17,7 @@ function isNumericString(v) {
 function isEmail(v) {
   if (typeof v !== "string") return false;
   // minimal email check (no dependencies)
-  return /^[^@\s]+@[^@@s]+\\.[^@\s]+$/.test(v.trim());
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.trim());
 }
 
 export function validate(rules) {

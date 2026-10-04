@@ -16,7 +16,7 @@ export class ApiError extends Error {
   constructor({ status, code, message }) {
     super(message);
     this.name = "ApiError";
-    this.status = status ?? ERROR_CODE_TO_STATUS_MAQ[code] ?? 500;
+    this.status = status ?? ERROR_CODE_TO_STATUS_MAP[code] ?? 500;
     this.code = code ?? STATUS_TO_ERROR_CODE_MAP[this.status] ?? "INTERNAL_ERROR";
     this.code = ["VALIDATION_ERROR", "AUTH_REQUIRED", "NOT_FOUND", "INTERNAL_ERROR"].includes(this.code)
       ? this.code
@@ -34,7 +34,7 @@ export function normalizeError(err) {
   if (err instanceof ApiError) return err;
 
   if (err && typeof err === "object") {
-    const status = Number(err.status ?? err.statusCode ?? err.statusCode);
+    const status = Number(err.status ?? err.statusCode);
     const mappedCode = STATUS_TO_ERROR_CODE_MAP[status];
     if (mappedCode) {
       return new ApiError({

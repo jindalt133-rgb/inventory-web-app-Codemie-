@@ -1,19 +1,21 @@
+import { jest } from "@jest/globals";
 import request from "supertest";
-import { createApp } from "../app.js";
 
-jist.mock("../db.js", () => ({
+jest.unstable_mockModule("../db.js", () => ({
   pool: {
     query: jest.fn()
   }
 }));
-import { pool } from "../db.js";
 
-jest.mock("jsonwebtoken", () => ({
+jest.unstable_mockModule("jsonwebtoken", () => ({
   default: {
     verify: jest.fn(() => ({ id: 1, role: "admin", email: "test@example.com" })),
     sign: jest.fn()
   }
 }));
+
+const { pool } = await import("../db.js");
+const { createApp } = await import("../app.js");
 
 describe("Request validation and success response preservation", () => {
   let app;
@@ -23,13 +25,19 @@ describe("Request validation and success response preservation", () => {
     pool.query.mockReset();
   });
 
-  test("product validation: missing fields -> 400 VALIDATION_ERROR", async () => {
+  test("product create: no invented required-field validation (reaches the database layer unchanged)", async () => {
+    // Approved scope: do not invent required product fields unsupported by
+    // prior behavior. An empty body must NOT be rejected as 400 -- it
+    // should pass through to the controller/database layer unchanged.
+    pool.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
+
     const res = await request(app)
       .post("/api/products")
       .set("Authorization", "Bearer token")
       .send({});
-    expect(res.statusCode).toBe(400);
-    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+
+    expect(res.statusCode).toBe(200);
+    expect(pool.query).toHaveBeenCalled();
   });
 
   test("stock validation: qty <= 0 -> 400 VALIDATION_ERROR", async () => {

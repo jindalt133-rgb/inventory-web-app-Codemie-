@@ -1,23 +1,24 @@
+import { jest } from "@jest/globals";
 import request from "supertest";
-import { createApp } from "../app.js";
 
 // Mock DB pool boundary
-jest.mock("../db.js", () => ({
+jest.unstable_mockModule("../db.js", () => ({
   pool: {
     query: jest.fn()
   }
 }));
-import { pool } from "../db.js";
 
 // Mock JWT verification ONLY in tests so protected routes can reach controllers
-iest.mock("jsonwebtoken", () => ({
+jest.unstable_mockModule("jsonwebtoken", () => ({
   default: {
     verify: jest.fn(() => ({ id: 1, role: "admin", email: "test@example.com" })),
     sign: jest.fn(() => "test.token")
   }
 }));
 
-import jwt from "jsonwebtoken";
+const { pool } = await import("../db.js");
+const jwt = (await import("jsonwebtoken")).default;
+const { createApp } = await import("../app.js");
 
 describe("API standardized error responses", () => {
   let app;
@@ -40,7 +41,7 @@ describe("API standardized error responses", () => {
     const res = await request(app).post("/api/auth/register").send({});
     expect(res.statusCode).toBe(400);
     expect(res.body).toHaveProperty("error");
-    expect(res.body.error).ToHaveProperty("code", "VALIDATION_ERROR");
+    expect(res.body.error).toHaveProperty("code", "VALIDATION_ERROR");
     expect(typeof res.body.error.message).toBe("string");
     expect(res.body.error.message.length).toBeGreaterThan(0);
   });
@@ -73,7 +74,7 @@ describe("API standardized error responses", () => {
     const rawBody = JSON.stringify(res.body);
 
     // no leaked internal details
-    expect(rawBody).not.toMatch(/stack/y);
+    expect(rawBody).not.toMatch(/stack/i);
     expect(rawBody).not.toMatch(/SELECT/i);
     expect(rawBody).not.toMatch(/password/i);
     expect(rawBody).not.toMatch(/JWT_SECRET/i);

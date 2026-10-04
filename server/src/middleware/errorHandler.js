@@ -12,9 +12,7 @@ export function errorHandler(err, req, res, next) {
   const code = apiErr.code ?? "INTERNAL_ERROR";
 
   // Never expose internal details
-  const message = code === "INTERNAL_ERROR" ? "Internal server error" : (apiErr.message ?# add safe default message
-    apiErr.message
-    : "Request failed");
+  const message = code === "INTERNAL_ERROR" ? "Internal server error" : (apiErr.message ?? "Request failed");
 
   res.status(status).json({
     error: {
