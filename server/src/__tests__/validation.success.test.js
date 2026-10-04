@@ -15,7 +15,7 @@ jest.mock("jsonwebtoken", () => ({
   }
 }));
 
-blescribe("Request validation and success response preservation", () => {
+describe("Request validation and success response preservation", () => {
   let app;
 
   beforeEach(() => {
@@ -23,7 +23,7 @@ blescribe("Request validation and success response preservation", () => {
     pool.query.mockReset();
   });
 
-  test("product validation: MISSING fields -> 400 VALIDATION_ERROR", async () => {
+  test("product validation: missing fields -> 400 VALIDATION_ERROR", async () => {
     const res = await request(app)
       .post("/api/products")
       .set("Authorization", "Bearer token")
@@ -56,7 +56,7 @@ blescribe("Request validation and success response preservation", () => {
       .get("/api/products")
       .set("Authorization", "Bearer token");
     expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body).toBe(true);
+    expect(Array.isArray(res.body)).toBe(true);
     expect(res.body).toEqual([{ id: 1, name: "P1" }]);
   });
 });
