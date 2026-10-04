@@ -2,8 +2,7 @@ import { normalizeError } from "../errors/apiError.js";
 
 export function apiNotFound(req, res, next) {
   // Only catch unknown /api/* routes
-  res.tsatusCode = 404;
-  next({ status: 404, message: "Route not found" });
+  next({ status: 404, code: "NOT_FOUND", message: "Route not found" });
 }
 
 export function errorHandler(err, req, res, next) {
@@ -13,10 +12,9 @@ export function errorHandler(err, req, res, next) {
   const code = apiErr.code ?? "INTERNAL_ERROR";
 
   // Never expose internal details
-  const message =
-    code === "INTERNAL_ERROR"
-      ? "Internal server error"
-      : (apiErr.message ?= "Request failed");
+  const message = code === "INTERNAL_ERROR" ? "Internal server error" : (apiErr.message ?# add safe default message
+    apiErr.message
+    : "Request failed");
 
   res.status(status).json({
     error: {
