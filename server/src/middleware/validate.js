@@ -2,7 +2,7 @@ import { ApiError } from "../errors/apiError.js";
 
 // Minimal validation helper: define rules per route
 // rule shape: { in: 'body'|'params'|'query', key: 'string',
-//              required?: bool, type?: 'string'|'number'|'email', min#� num, custom?: (v)=>bool }
+//              required?: bool, type?: 'string'|'number'|'email', min?: number, custom?: (v)=>bool }
 
 function isEmpty(v) {
   return v === undefined || v === null || v === "";
@@ -63,7 +63,7 @@ export function validate(rules) {
             new ApiError({
               status: 400,
               code: "VALIDATION_ERROR",
-              message: `${rule.key} must be greater than ${rule.min}`
+              message: `${rule.key} must be at least ${rule.min}`
             })
           );
         }

@@ -54,6 +54,25 @@ describe("API standardized error responses", () => {
     });
   });
 
+  test.each([
+    ["in", "SELECT id FROM products"],
+    ["out", "SELECT quantity FROM products"]
+  ])("stock %s for unknown product -> 404 NOT_FOUND and no writes", async (direction, selectSql) => {
+    pool.query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .post(`/api/stock/${direction}`)
+      .set("Authorization", "Bearer valid.token")
+      .send({ product_id: 999, qty: 5 });
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body).toEqual({
+      error: { code: "NOT_FOUND", message: "Product not found" }
+    });
+    expect(pool.query).toHaveBeenCalledTimes(1);
+    expect(pool.query.mock.calls[0][0]).toContain(selectSql);
+  });
+
   test("500 INTERNAL_ERROR is safe and does not leak internal details", async () => {
     // Allow request to pass auth and reach the controller
     jwt.verify.mockImplementationOnce(() => ({ id: 1, role: "admin", email: "test@example.com" }));

@@ -47,6 +47,7 @@ describe("Request validation and success response preservation", () => {
       .send({ product_id: 1, qty: 0 });
     expect(res.statusCode).toBe(400);
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    expect(res.body.error.message).toBe("qty must be at least 1");
   });
 
   test("supplier validation: missing name -> 400 VALIDATION_ERROR", async () => {
