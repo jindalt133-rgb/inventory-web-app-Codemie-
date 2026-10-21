@@ -59,6 +59,54 @@ describe("Request validation and success response preservation", () => {
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
   });
 
+  const fullRegister = { name: "N", email: "user@example.com", password: "pw", role: "admin" };
+
+  test.each(["name", "email", "password", "role"])(
+    "FR-008: register missing %s -> 400 VALIDATION_ERROR",
+    async (field) => {
+      const body = { ...fullRegister };
+      delete body[field];
+      const res = await request(app).post("/api/auth/register").send(body);
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toEqual({
+        error: { code: "VALIDATION_ERROR", message: `${field} is required` }
+      });
+      expect(pool.query).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each(["email", "password"])(
+    "FR-008: login missing %s -> 400 VALIDATION_ERROR",
+    async (field) => {
+      const body = { email: "user@example.com", password: "pw" };
+      delete body[field];
+      const res = await request(app).post("/api/auth/login").send(body);
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toEqual({
+        error: { code: "VALIDATION_ERROR", message: `${field} is required` }
+      });
+      expect(pool.query).not.toHaveBeenCalled();
+    }
+  );
+
+  test("FR-008: no email-format rule -- login with non-email string is not rejected as 400", async () => {
+    pool.query.mockResolvedValueOnce({ rows: [] });
+    const res = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "not-an-email", password: "pw" });
+    expect(pool.query).toHaveBeenCalledTimes(1);
+    expect(res.statusCode).toBe(401);
+    expect(res.body.error.code).toBe("AUTH_REQUIRED");
+  });
+
+  test("success response preserved: register with all fields returns created user", async () => {
+    const row = { id: 7, name: "N", email: "user@example.com", role: "admin" };
+    pool.query.mockResolvedValueOnce({ rows: [row] });
+    const res = await request(app).post("/api/auth/register").send(fullRegister);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual(row);
+  });
+
   test("success response preserved: GET /api/products returns array", async () => {
     pool.query.mockResolvedValueOnce({ rows: [{ id: 1, name: "P1" }] });
     const res = await request(app)

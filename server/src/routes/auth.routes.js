@@ -8,7 +8,7 @@ router.post(
   "/register",
   validate([
     { in: "body", key: "name", required: true },
-    { in: "body", key: "email", required: true, type: "email" },
+    { in: "body", key: "email", required: true },
     { in: "body", key: "password", required: true },
     { in: "body", key: "role", required: true }
   ]),
@@ -18,7 +18,7 @@ router.post(
 router.post(
   "/login",
   validate([
-    { in: "body", key: "email", required: true, type: "email" },
+    { in: "body", key: "email", required: true },
     { in: "body", key: "password", required: true }
   ]),
   login

@@ -2,7 +2,7 @@ import { ApiError } from "../errors/apiError.js";
 
 // Minimal validation helper: define rules per route
 // rule shape: { in: 'body'|'params'|'query', key: 'string',
-//              required?: bool, type?: 'string'|'number'|'email', min?: number, custom?: (v)=>bool }
+//              required?: bool, type?: 'string'|'number', min?: number, custom?: (v)=>bool }
 
 function isEmpty(v) {
   return v === undefined || v === null || v === "";
@@ -12,12 +12,6 @@ function isNumericString(v) {
   if (typeof v === "number") return Number.isFinite(v);
   if (typeof v !== "string" && typeof v !== "number") return false;
   return String(v).trim() !== "" && Number.isFinite(Number(v));
-}
-
-function isEmail(v) {
-  if (typeof v !== "string") return false;
-  // minimal email check (no dependencies)
-  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.trim());
 }
 
 export function validate(rules) {
@@ -42,16 +36,6 @@ export function validate(rules) {
             status: 400,
             code: "VALIDATION_ERROR",
             message: `${rule.key} must be a number`
-          })
-        );
-      }
-
-      if (!isEmpty(value) && rule.type === "email" && !isEmail(value)) {
-        return next(
-          new ApiError({
-            status: 400,
-            code: "VALIDATION_ERROR",
-            message: `${rule.key} must be a valid email` 
           })
         );
       }
