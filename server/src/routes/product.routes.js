@@ -14,15 +14,20 @@ const router = express.Router();
 
 const idParamRules = [{ in: "params", key: "id", required: true, type: "number" }];
 
-// No body-field validation here: the pre-existing productController never
-// enforced required product fields, so none are invented here either
-// (approved scope: numeric :id validation only for products).
+const productBodyRules = [
+  { in: "body", key: "sku", required: true },
+  { in: "body", key: "name", required: true },
+  { in: "body", key: "category_id", required: true, allowNull: true },
+  { in: "body", key: "price", required: true },
+  { in: "body", key: "quantity", required: true },
+  { in: "body", key: "reorder_level", required: true }
+];
 
 router.get("/", verifyToken, getProducts);
 
-router.post("/", verifyToken, addProduct);
+router.post("/", verifyToken, validate(productBodyRules), addProduct);
 
-router.put("/:id", verifyToken, validate(idParamRules), updateProduct);
+router.put("/:id", verifyToken, validate(idParamRules), validate(productBodyRules), updateProduct);
 
 router.delete("/:id", verifyToken, validate(idParamRules), deleteProduct);
 

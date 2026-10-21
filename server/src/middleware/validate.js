@@ -2,7 +2,7 @@ import { ApiError } from "../errors/apiError.js";
 
 // Minimal validation helper: define rules per route
 // rule shape: { in: 'body'|'params'|'query', key: 'string',
-//              required?: bool, type?: 'string'|'number', min?: number, custom?: (v)=>bool }
+//              required?: bool, allowNull?: bool (key must be present; explicit null accepted), type?: 'string'|'number', min?: number, custom?: (v)=>bool }
 
 function isEmpty(v) {
   return v === undefined || v === null || v === "";
@@ -20,7 +20,9 @@ export function validate(rules) {
       const source = rule.in === "params" ? req.params : rule.in === "query" ? req.query : req.body;
       const value = source?.[rule.key];
 
-      if (rule.required && isEmpty(value)) {
+      const explicitNull = rule.allowNull === true && value === null;
+
+      if (rule.required && isEmpty(value) && !explicitNull) {
         return next(
           new ApiError({
             status: 400,

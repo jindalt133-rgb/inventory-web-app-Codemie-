@@ -25,19 +25,92 @@ describe("Request validation and success response preservation", () => {
     pool.query.mockReset();
   });
 
-  test("product create: no invented required-field validation (reaches the database layer unchanged)", async () => {
-    // Approved scope: do not invent required product fields unsupported by
-    // prior behavior. An empty body must NOT be rejected as 400 -- it
-    // should pass through to the controller/database layer unchanged.
-    pool.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
+  const fullProduct = {
+    sku: "SKU-1",
+    name: "Widget",
+    category_id: 1,
+    price: 9.5,
+    quantity: 10,
+    reorder_level: 2
+  };
+  const productFields = Object.keys(fullProduct);
 
+  describe.each([
+    ["POST", "/api/products"],
+    ["PUT", "/api/products/5"]
+  ])("KAN-5 product %s validation", (method, url) => {
+    const send = (body) =>
+      request(app)[method.toLowerCase()](url).set("Authorization", "Bearer token").send(body);
+
+    test.each(productFields)("omitted %s -> 400 VALIDATION_ERROR", async (field) => {
+      const body = { ...fullProduct };
+      delete body[field];
+      const res = await send(body);
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toEqual({
+        error: { code: "VALIDATION_ERROR", message: `${field} is required` }
+      });
+      expect(pool.query).not.toHaveBeenCalled();
+    });
+
+    test.each(["sku", "name", "price", "quantity", "reorder_level"])(
+      "explicit null %s -> 400 VALIDATION_ERROR (only category_id accepts null)",
+      async (field) => {
+        const res = await send({ ...fullProduct, [field]: null });
+        expect(res.statusCode).toBe(400);
+        expect(res.body).toEqual({
+          error: { code: "VALIDATION_ERROR", message: `${field} is required` }
+        });
+        expect(pool.query).not.toHaveBeenCalled();
+      }
+    );
+
+    test("explicit category_id: null is accepted and response preserved (current UI payload)", async () => {
+      const body = { ...fullProduct, category_id: null };
+      const row = { id: 5, ...body };
+      pool.query.mockResolvedValueOnce({ rows: [row] });
+      const res = await send(body);
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual(row);
+      expect(pool.query).toHaveBeenCalledTimes(1);
+      expect(pool.query.mock.calls[0][1]).toContain(null);
+    });
+
+    test("empty-string category_id -> 400 VALIDATION_ERROR", async () => {
+      const res = await send({ ...fullProduct, category_id: "" });
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toEqual({
+        code: "VALIDATION_ERROR",
+        message: "category_id is required"
+      });
+      expect(pool.query).not.toHaveBeenCalled();
+    });
+
+    test("empty body -> 400 VALIDATION_ERROR", async () => {
+      const res = await send({});
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error.code).toBe("VALIDATION_ERROR");
+      expect(pool.query).not.toHaveBeenCalled();
+    });
+
+    test("valid body (including zero quantity/reorder_level/price) is accepted and response preserved", async () => {
+      const body = { ...fullProduct, price: 0, quantity: 0, reorder_level: 0 };
+      const row = { id: 5, ...body };
+      pool.query.mockResolvedValueOnce({ rows: [row] });
+      const res = await send(body);
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual(row);
+      expect(pool.query).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  test("KAN-5 product PUT: invalid :id is still reported before body validation", async () => {
     const res = await request(app)
-      .post("/api/products")
+      .put("/api/products/abc")
       .set("Authorization", "Bearer token")
       .send({});
-
-    expect(res.statusCode).toBe(200);
-    expect(pool.query).toHaveBeenCalled();
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error.message).toBe("id must be a number");
   });
 
   test("stock validation: qty <= 0 -> 400 VALIDATION_ERROR", async () => {
