@@ -38,7 +38,31 @@ jobs:
       # The database layer is mocked in the tests; no PostgreSQL is required.
       - name: Run backend tests
         working-directory: server
-        run: npm test -- --ci
+        run: npm test -- --ci --verbose --json --outputFile=jest-results.json
+
+      - name: Write test evidence
+        if: always()
+        working-directory: server
+        env:
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          node -e '
+            const r=require("./jest-results.json"),e=process.env;
+            const ev={commit_sha:e.COMMIT_SHA,run_url:e.RUN_URL,suites_total:r.numTotalTestSuites,suites_passed:r.numPassedTestSuites,tests_total:r.numTotalTests,tests_passed:r.numPassedTests,tests_failed:r.numFailedTests,success:r.success};
+            require("fs").writeFileSync("test-evidence.json",JSON.stringify(ev,null,2));
+            console.log("### Backend tests @ "+ev.commit_sha);
+            console.log(ev.tests_passed+"/"+ev.tests_total+" passed, "+ev.suites_passed+"/"+ev.suites_total+" suites");
+          ' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            server/jest-results.json
+            server/test-evidence.json
 
   frontend-build:
     name: Frontend production build
