@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - feature/request-validation-standardized-errors
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    name: Backend tests (Jest + Supertest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log commit SHA
+        run: |
+          echo "Event:        ${{ github.event_name }}"
+          echo "Ref:          ${{ github.ref }}"
+          echo "Commit SHA:   ${{ github.event.pull_request.head.sha || github.sha }}"
+          echo "Workflow SHA: ${{ github.sha }}"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: server
+        run: npm ci
+
+      # The database layer is mocked in the tests; no PostgreSQL is required.
+      - name: Run backend tests
+        working-directory: server
+        run: npm test -- --ci
+
+  frontend-build:
+    name: Frontend production build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log commit SHA
+        run: |
+          echo "Event:        ${{ github.event_name }}"
+          echo "Ref:          ${{ github.ref }}"
+          echo "Commit SHA:   ${{ github.event.pull_request.head.sha || github.sha }}"
+          echo "Workflow SHA: ${{ github.sha }}"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: client
+        run: npm run build
