@@ -1,52 +1,68 @@
 import { pool } from "../db.js";
 
-export const getProducts = async (req, res) => {
-  const result = await pool.query("SELECT * FROM products ORDER BY id DESC");
-  res.json(result.rows);
+export const getProducts = async (req, res, next) => {
+  try {
+    const result = await pool.query("SELECT * FROM products ORDER BY id DESC");
+    res.json(result.rows);
+  } catch (err) {
+    next(err);
+  }
 };
 
-export const addProduct = async (req, res) => {
+export const addProduct = async (req, res, next) => {
   const { sku, name, category_id, price, quantity, reorder_level } = req.body;
 
-  const result = await pool.query(
-    `INSERT INTO products (sku,name,category_id,price,quantity,reorder_level)
+  try {
+    const result = await pool.query(
+      `INSERT INTO products (sku,name,category_id,price,quantity,reorder_level)
      VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-    [sku, name, category_id, price, quantity, reorder_level]
-  );
+      [sku, name, category_id, price, quantity, reorder_level]
+    );
 
-  res.json(result.rows[0]);
+    res.json(result.rows[0]);
+  } catch (err) {
+    next(err);
+  }
 };
 
-export const updateProduct = async (req, res) => {
-
+export const updateProduct = async (req, res, next) => {
   const id = req.params.id;
   const { sku, name, category_id, price, quantity, reorder_level } = req.body;
 
-  const result = await pool.query(
-    `UPDATE products
+  try {
+    const result = await pool.query(
+      `UPDATE products
      SET sku=$1,name=$2,category_id=$3,price=$4,quantity=$5,reorder_level=$6
      WHERE id=$7
      RETURNING *`,
-    [sku, name, category_id, price, quantity, reorder_level, id]
-  );
+      [sku, name, category_id, price, quantity, reorder_level, id]
+    );
 
-  res.json(result.rows[0]);
+    res.json(result.rows[0]);
+  } catch (err) {
+    next(err);
+  }
 };
 
-export const deleteProduct = async (req, res) => {
-
+export const deleteProduct = async (req, res, next) => {
   const id = req.params.id;
 
-  await pool.query("DELETE FROM products WHERE id=$1", [id]);
-
-  res.json({ message: "Product deleted" });
+  try {
+    await pool.query("DELETE FROM products WHERE id=$1", [id]);
+    res.json({ message: "Product deleted" });
+  } catch (err) {
+    next(err);
+  }
 };
 
-export const lowStock = async (req, res) => {
+export const lowStock = async (req, res, next) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM products WHERE quantity <= reorder_level`
+    );
 
-  const result = await pool.query(
-    `SELECT * FROM products WHERE quantity <= reorder_level`
-  );
-
-  res.json(result.rows);
+    res.json(result.rows);
+  } catch (err) {
+    next(err);
+  }
 };

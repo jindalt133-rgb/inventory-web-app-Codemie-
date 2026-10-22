@@ -1,17 +1,20 @@
 import { pool } from "../db.js";
+import { ApiError } from "../errors/apiError.js";
 
-// ✅ STOCK IN (increase quantity + add history)
-export const stockIn = async (req, res) => {
+// ✅ sTOCK IN (increase quantity + add history)
+export const stockIn = async (req, res, next) => {
   const { product_id, qty, note } = req.body;
 
   try {
-    if (!product_id || !qty || qty <= 0) {
-      return res.status(400).json({ message: "product_id and qty must be valid" });
-    }
+    // request validation handled by middleware
 
     // Check product exists
     const p = await pool.query("SELECT id FROM products WHERE id=$1", [product_id]);
-    if (p.rows.length === 0) return res.status(404).json({ message: "Product not found" });
+    if (p.rows.length === 0) {
+      return next(
+        new ApiError({ status: 404, code: "NOT_FOUND", message: "Product not found" })
+      );
+    }
 
     // Update product quantity
     await pool.query("UPDATE products SET quantity = quantity + $1 WHERE id=$2", [qty, product_id]);
@@ -24,26 +27,36 @@ export const stockIn = async (req, res) => {
 
     res.json({ message: "Stock IN successful", movement: movement.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 
-// ✅ STOCK OUT (decrease quantity + add history)
-export const stockOut = async (req, res) => {
+// ✅ sTOCK OUT (decrease quantity + add history)
+export const stockOut = async (req, res, next) => {
   const { product_id, qty, note } = req.body;
 
   try {
-    if (!product_id || !qty || qty <= 0) {
-      return res.status(400).json({ message: "product_id and qty must be valid" });
-    }
-
     // Check product + current stock
     const cur = await pool.query("SELECT quantity FROM products WHERE id=$1", [product_id]);
-    if (cur.rows.length === 0) return res.status(404).json({ message: "Product not found" });
+    if (cur.rows.length === 0) {
+      return next(
+        new ApiError({
+          status: 404,
+          code: "NOT_FOUND",
+          message: "Product not found"
+        })
+      );
+    }
 
     const currentQty = Number(cur.rows[0].quantity);
-    if (currentQty < qty) {
-      return res.status(400).json({ message: `Not enough stock. Current stock: ${currentQty}` });
+    if (currentQty < Number(qty)) {
+      return next(
+        new ApiError({
+          status: 400,
+          code: "VALIDATION_ERROR",
+          message: "Not enough stock"
+        })
+      );
     }
 
     // Update product quantity
@@ -57,12 +70,12 @@ export const stockOut = async (req, res) => {
 
     res.json({ message: "Stock OUT successful", movement: movement.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 
-// ✅ STOCK HISTORY (latest 200)
-export const stockHistory = async (req, res) => {
+// ✅ sTOCK HISTORY (latest 200)
+export const stockHistory = async (req, res, next) => {
   try {
     const result = await pool.query(`
       SELECT m.*, p.sku, p.name
@@ -74,6 +87,6 @@ export const stockHistory = async (req, res) => {
 
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };

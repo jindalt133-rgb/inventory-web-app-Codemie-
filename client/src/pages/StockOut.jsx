@@ -48,7 +48,7 @@ export default function StockOut() {
       loadProducts();
     } catch (error) {
       setMessage(
-        error?.response?.data?.message || "Failed to remove stock"
+        error?.response?.data?.error?.message || "Failed to remove stock"
       );
     }
   };
